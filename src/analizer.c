@@ -1,6 +1,5 @@
 #include "analizer.h"
 #include <ctype.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 _Bool is_letter(char c) { return isalpha(c) != 0; }
