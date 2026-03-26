@@ -5,15 +5,35 @@
 
 #define BUFFER_LEN 4096
 
+//TODO: Aun no se utiliza
 typedef enum {
   LT = '<',
   EQ = '=',
 } Tokens;
 
+//TODO: Aun no se utiliza
 typedef struct {
   Tokens token;
   char name[8];
 } Symbol;
+
+//TODO: Se puede mejorar?
+typedef struct {
+  size_t length;
+  char name[];
+} Identifier;
+
+char *keywords[] = {"char", "int", "string"};
+
+int kw_contain(char *keywords[], size_t length, char *search) {
+  for (int i = 0; i < length; i++) {
+    if (strcmp(keywords[i], search) == 0) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
 
 void op_automate(char l, int phase) {
   if (phase == 0) {
@@ -50,10 +70,13 @@ void op_automate(char l, int phase) {
   }
 }
 
+//TODO: Se hace lo mismo muchas veces
 void tokenizer(char *s) {
   size_t len = strlen(s);
   char lexeme[36] = {0};
   int phase = 0;
+
+  Identifier *id = malloc(sizeof(Identifier) + 1024);
 
   for (int i = 0; i < len; i++) {
 
@@ -64,11 +87,18 @@ void tokenizer(char *s) {
       } else if (s[i] == ';') {
         lexeme[strlen(lexeme)] = s[i];
         lexeme[strlen(lexeme) + 1] = '\0';
+      } else if (isdigit(s[i])) {
+        lexeme[strlen(lexeme)] = s[i];
+        lexeme[strlen(lexeme) + 1] = '\0';
       } else {
         op_automate(s[i], phase);
       }
     } else {
-      if (isalnum(s[i]) || s[i] == '_') {
+      if ((isalpha(s[i - 1]) || s[i - 1] == '_') &&
+          (isalnum(s[i]) || s[i] == '_')) {
+        lexeme[strlen(lexeme)] = s[i];
+        lexeme[strlen(lexeme) + 1] = '\0';
+      } else if (isdigit(s[i - 1]) && isdigit(s[i])) {
         lexeme[strlen(lexeme)] = s[i];
         lexeme[strlen(lexeme) + 1] = '\0';
       } else if (s[i] == ';') {
@@ -79,14 +109,24 @@ void tokenizer(char *s) {
       }
     }
 
-    phase ++;
+    phase++;
   }
 
-  if (strcmp(lexeme, "int") == 0) {
+  if (kw_contain(keywords, sizeof(keywords) / sizeof(keywords[0]), lexeme)) {
     printf("Lexeme: %s | Type: keyword\n", lexeme);
   } else {
-    printf("Lexeme: %s | Type: regular\n", lexeme);
+    if (isalpha(lexeme[0]) || lexeme[0] == '_') {
+      strcpy(id->name, lexeme);
+      id->length = strlen(id->name);
+      printf("Lexeme: %s | Type: id\n", id->name);
+    } else if (isdigit(lexeme[0])) {
+      printf("Lexeme: %d | Type: digit\n", atoi(lexeme));
+    } else if (lexeme[0] == ';') {
+      printf("Lexeme: %s | Type: semi\n", lexeme);
+    }
   }
+
+  free(id);
 }
 
 int main() {
@@ -104,7 +144,15 @@ int main() {
 
     while (forward < length) {
       char c_char = buffer[forward];
-      if (!isspace(c_char)) {
+      if (c_char == ';') {
+        if (strlen(token) > 0) {
+          tokenizer(token);
+        }
+        token[0] = c_char;
+        token[1] = '\0';
+        tokenizer(token);
+        token[0] = '\0';
+      } else if (!isspace(c_char)) {
         size_t len = strlen(token);
         token[len] = c_char;
         token[len + 1] = '\0';

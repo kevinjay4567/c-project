@@ -1,5 +1,2 @@
-int x = 10;
-int y = x;
-string name = "Kevin";
-
-println("Hello $name");
+int x = 50;
+int y = x - 10;
