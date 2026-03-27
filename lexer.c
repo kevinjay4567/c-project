@@ -5,25 +5,27 @@
 
 #define BUFFER_LEN 4096
 
-//TODO: Aun no se utiliza
+// TODO: Aun no se utiliza
 typedef enum {
   LT = '<',
   EQ = '=',
 } Tokens;
 
-//TODO: Aun no se utiliza
+// TODO: Aun no se utiliza
 typedef struct {
   Tokens token;
   char name[8];
 } Symbol;
 
-//TODO: Se puede mejorar?
+// TODO: Se puede mejorar?
 typedef struct {
   size_t length;
   char name[];
 } Identifier;
 
 char *keywords[] = {"char", "int", "string"};
+
+int is_alund(char c) { return isalpha(c) || c == '_'; }
 
 int kw_contain(char *keywords[], size_t length, char *search) {
   for (int i = 0; i < length; i++) {
@@ -70,7 +72,7 @@ void op_automate(char l, int phase) {
   }
 }
 
-//TODO: Se hace lo mismo muchas veces
+// TODO: Se hace lo mismo muchas veces
 void tokenizer(char *s) {
   size_t len = strlen(s);
   char lexeme[36] = {0};
@@ -131,41 +133,52 @@ void tokenizer(char *s) {
 
 int main() {
   FILE *in = fopen("input.txt", "r");
-  int begin = 0, forward = 0, phase = 0;
+  if (!in)
+    return 1;
+
   char buffer[BUFFER_LEN];
   char s_buffer[BUFFER_LEN];
-  buffer[sizeof(buffer) - 1] = EOF;
-  s_buffer[sizeof(s_buffer) - 1] = EOF;
-  Symbol sym = {0};
+  char *forward;
 
   while (fgets(buffer, sizeof(buffer), in)) {
-    size_t length = strlen(buffer);
-    char token[128] = {0};
+    forward = buffer;
+    char token[128];
+    while (forward != &buffer[strlen(buffer)]) {
+      if (!isspace(*forward)) {
+        if (*forward == ';') {
+          if (strlen(token) > 0) {
+            tokenizer(token);
+          }
 
-    while (forward < length) {
-      char c_char = buffer[forward];
-      if (c_char == ';') {
-        if (strlen(token) > 0) {
+          token[0] = *forward;
+          token[1] = '\0';
           tokenizer(token);
+          token[0] = '\0';
+        } else {
+          size_t len = strlen(token);
+          token[len] = *forward;
+          token[len + 1] = '\0';
         }
-        token[0] = c_char;
-        token[1] = '\0';
-        tokenizer(token);
-        token[0] = '\0';
-      } else if (!isspace(c_char)) {
-        size_t len = strlen(token);
-        token[len] = c_char;
-        token[len + 1] = '\0';
       } else {
         if (strlen(token) > 0) {
           tokenizer(token);
         }
+
         token[0] = '\0';
       }
-      forward++;
-    }
 
-    forward = 0;
+      switch (*forward++) {
+      case '\0':
+        if (forward == &buffer[BUFFER_LEN - 1]) {
+          printf("Final del primer buffer");
+        } else if (forward == &s_buffer[BUFFER_LEN - 1]) {
+          printf("Final del segundo buffer");
+        } else {
+          printf("Final de la linea");
+          break;
+        }
+      }
+    }
   }
 
   fclose(in);
