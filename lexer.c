@@ -7,22 +7,34 @@
 const char *keywords[] = {"char", "int", "string"};
 
 char buffer[2][BUFFER_LEN] = {0};
-int current = 0;
+int current = 0, cur_col = 1, cur_row = 1;
 char *lexeme_begin, *forward, token[64] = {0};
 FILE *input = {0};
 
 const char *token_type_to_str(TokenType t) {
   switch (t) {
-    case LT: return "LT";
-    case LE: return "LE";
-    case EQ: return "EQ";
-    case AS: return "AS";
-    case GT: return "GT";
-    case ID: return "ID";
-    case KEYWORD: return "KEYWORD";
-    case DIGIT: return "DIGIT";
-    case OP: return "OP";
-    default: return "UNKNOWN";
+  case LT:
+    return "LT";
+  case LE:
+    return "LE";
+  case EQ:
+    return "EQ";
+  case AS:
+    return "AS";
+  case GT:
+    return "GT";
+  case ID:
+    return "ID";
+  case KEYWORD:
+    return "KEYWORD";
+  case DIGIT:
+    return "DIGIT";
+  case OP:
+    return "OP";
+  case SEMI:
+    return "SEMI";
+  default:
+    return "UNKNOWN";
   }
 }
 
@@ -73,8 +85,10 @@ char next_char() {
   case '/': {
     if (*(forward + 1) == '/') {
       while (*forward != '\n') {
+        cur_col++;
         forward++;
       }
+      return *forward;
     } else {
       return '\0';
     }
@@ -82,13 +96,18 @@ char next_char() {
   }
   }
 
+  cur_col++;
   return *forward++;
 }
 
 TokenKind next_token() {
   TokenType t_token = {-1};
   while (*forward != '\0') {
-    if (isspace(*forward)) {
+    if (isspace(*forward) || *forward == '\t' || *forward == '\n') {
+      if (*forward == '\n') {
+        cur_row++;
+        cur_col = 0;
+      }
       next_char();
       continue;
     }
@@ -106,7 +125,6 @@ TokenKind next_token() {
       }
 
       token[idx + 1] = '\0';
-
       if (strcmp(token, "int") == 0) {
         t_token = KEYWORD;
       } else {
@@ -144,10 +162,13 @@ TokenKind next_token() {
     } else if (*forward == ';') {
       token[0] = next_char();
       token[1] = '\0';
+      t_token = SEMI;
     }
 
+    //FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la derecha
+    size_t len = strlen(token);
     return (TokenKind){.type = t_token,
-                       .loc = {.row = 0, .col = 0},
+                       .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
                        .lexeme = token,
                        .lexeme_len = strlen(token)};
   };

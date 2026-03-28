@@ -5,11 +5,27 @@
 
 #define BUFFER_LEN 4096
 
-typedef enum { LT, LE, EQ, AS, GT, GE, IF, ELSE, ID, NUMBER, KEYWORD, DIGIT, OP } TokenType;
+typedef enum {
+  LT,
+  LE,
+  EQ,
+  AS,
+  GT,
+  GE,
+  IF,
+  ELSE,
+  ID,
+  NUMBER,
+  KEYWORD,
+  DIGIT,
+  OP,
+  SEMI
+} TokenType;
 
 typedef struct {
+  int bgn;
+  int fwd;
   int row;
-  int col;
 } TokenLoc;
 
 typedef struct {
