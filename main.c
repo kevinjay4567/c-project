@@ -1,21 +1,17 @@
-#include "src/analizer.h"
+#include "lexer.h"
 #include <stdio.h>
-#include <stdlib.h>
 
 int main() {
-  FILE *fptr = fopen("test.txt", "r");
-  if (fptr == NULL) {
-    perror("File not read");
+  if (!read_file("input.txt")) {
     return 1;
   }
 
-  char line[100];
-
-  while (fgets(line, sizeof(line), fptr)) {
-    read_line(line);
+  char *nc = next_token();
+  while (nc) {
+    printf("Token: %s\n", nc);
+    nc = next_token();
   }
 
-  fclose(fptr);
-
+  close_file();
   return 0;
 }
