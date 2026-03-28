@@ -135,6 +135,23 @@ void tokenizer(char *s) {
   free(id);
 }
 
+char peek_current_char() {
+    if (*forward == '\0') {
+        return 0;
+    }
+  return *forward;
+}
+
+char peek_next_char() {
+  if (*forward == '\0') {
+    return 0;
+  }
+
+  return *(forward + 1);
+}
+
+char peek_before_char() { return *(forward - 1); }
+
 char next_char(FILE *in) {
   switch (*forward) {
   case '\0': {
@@ -155,7 +172,6 @@ char next_char(FILE *in) {
       while (*forward != '\n') {
         forward++;
       }
-      forward++;
     } else {
       return 0;
     }
@@ -163,63 +179,61 @@ char next_char(FILE *in) {
   }
   }
 
-  return *forward;
+  return *forward++;
 }
 
 char *next_token(FILE *in) {
   char *token;
 
-  while (next_char(in)) {
+  while(*forward != '\0') {
     if (isspace(*forward)) {
-      forward++;
+      next_char(in);
       continue;
     }
+
+    if (*forward == '/') {
+        next_char(in);
+        continue;
+    }
+
     if (isalpha(*forward) || *forward == '_') {
       int idx = 0;
-      token[idx] = *forward++;
-      char nc = next_char(in);
-      while (isalnum(nc) || nc == '_') {
-        token[++idx] = *forward++;
-        nc = next_char(in);
-      }
-      token[idx + 1] = '\0';
-      forward--;
-    } else if (*forward == '=') {
-      int idx = 0;
-      token[idx] = *forward++;
-      char nc = next_char(in);
-      if (nc == '=') {
-        token[++idx] = *forward++;
-        nc = next_char(in);
+      token[idx] = next_char(in);
+      while (isalnum(*forward) || *forward == '_') {
+        token[++idx] = next_char(in);
       }
 
       token[idx + 1] = '\0';
-      forward--;
+    } else if (*forward == '=') {
+      int idx = 0;
+      token[idx] = next_char(in);
+      if (*forward == '=') {
+        token[++idx] = next_char(in);
+      }
+
+      token[idx + 1] = '\0';
     } else if (isdigit(*forward)) {
       int idx = 0;
       while (isdigit(*forward)) {
-        token[idx++] = *forward++;
+        token[idx++] = next_char(in);
       }
 
-      token[idx] = '\0'; 
-      forward--;
+      token[idx] = '\0';
     } else if (*forward == '-') {
       int idx = 0;
-      token[idx++] = *forward++;
-      char nc = next_char(in);
-      if (nc == '-' || nc == '=') {
-        token[idx++] = nc;
+      token[idx++] = next_char(in);
+      if (*forward == '-' || *forward == '=') {
+        token[idx++] = next_char(in);
       }
 
       token[idx] = '\0';
     } else if (*forward == ';') {
-      token[0] = *forward;
+      token[0] = next_char(in);
       token[1] = '\0';
     }
 
-    forward++;
     return token;
-  }
+  };
 
   return 0;
 }
