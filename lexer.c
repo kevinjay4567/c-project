@@ -166,20 +166,8 @@ char next_char(FILE *in) {
   return *forward;
 }
 
-int main() {
-  FILE *in = fopen("input.txt", "r");
-  if (!in)
-    return 1;
-
-  size_t n = fread(buffer[0], 1, BUFFER_LEN, in);
-
-  if (n < BUFFER_LEN) {
-    buffer[0][n] = '\0';
-  }
-
-  forward = buffer[0];
-  lexeme_begin = forward;
-  char token[64] = {0};
+char *next_token(FILE *in) {
+  char *token;
 
   while (next_char(in)) {
     if (isspace(*forward)) {
@@ -229,10 +217,31 @@ int main() {
       token[1] = '\0';
     }
 
-    printf("Token: %s\n", token);
-    token[0] = '\0';
-    int count = 0;
     forward++;
+    return token;
+  }
+
+  return 0;
+}
+
+int main() {
+  FILE *in = fopen("input.txt", "r");
+  if (!in)
+    return 1;
+
+  size_t n = fread(buffer[0], 1, BUFFER_LEN, in);
+
+  if (n < BUFFER_LEN) {
+    buffer[0][n] = '\0';
+  }
+
+  forward = buffer[0];
+  lexeme_begin = forward;
+
+  char *nt = next_token(in);
+  while (nt) {
+    printf("%s\n", nt);
+    nt = next_token(in);
   }
 
   fclose(in);
