@@ -1,3 +1,2 @@
-// Comentario
 int numero = 50;
 int y = numero - 10;

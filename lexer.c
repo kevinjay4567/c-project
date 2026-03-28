@@ -11,6 +11,21 @@ int current = 0;
 char *lexeme_begin, *forward, token[64] = {0};
 FILE *input = {0};
 
+const char *token_type_to_str(TokenType t) {
+  switch (t) {
+    case LT: return "LT";
+    case LE: return "LE";
+    case EQ: return "EQ";
+    case AS: return "AS";
+    case GT: return "GT";
+    case ID: return "ID";
+    case KEYWORD: return "KEYWORD";
+    case DIGIT: return "DIGIT";
+    case OP: return "OP";
+    default: return "UNKNOWN";
+  }
+}
+
 int read_file(const char *path) {
   input = fopen(path, "r");
 
@@ -31,6 +46,14 @@ int read_file(const char *path) {
 }
 
 void close_file() { fclose(input); }
+
+char peek_next_char() {
+  if (*forward == '\0') {
+    return '\0';
+  }
+
+  return *(forward + 1);
+}
 
 char next_char() {
   switch (*forward) {
@@ -62,7 +85,8 @@ char next_char() {
   return *forward++;
 }
 
-char *next_token() {
+TokenKind next_token() {
+  TokenType t_token = {-1};
   while (*forward != '\0') {
     if (isspace(*forward)) {
       next_char();
@@ -82,12 +106,22 @@ char *next_token() {
       }
 
       token[idx + 1] = '\0';
+
+      if (strcmp(token, "int") == 0) {
+        t_token = KEYWORD;
+      } else {
+        t_token = ID;
+      }
     } else if (*forward == '=') {
       int idx = 0;
       token[idx] = next_char();
       if (*forward == '=') {
         token[++idx] = next_char();
+        t_token = AS;
+      } else {
+        t_token = EQ;
       }
+
       token[idx + 1] = '\0';
     } else if (isdigit(*forward)) {
       int idx = 0;
@@ -95,12 +129,15 @@ char *next_token() {
         token[idx++] = next_char();
       }
 
+      t_token = DIGIT;
       token[idx] = '\0';
     } else if (*forward == '-') {
       int idx = 0;
       token[idx++] = next_char();
       if (*forward == '-' || *forward == '=') {
         token[idx++] = next_char();
+      } else {
+        t_token = OP;
       }
 
       token[idx] = '\0';
@@ -109,8 +146,11 @@ char *next_token() {
       token[1] = '\0';
     }
 
-    return token;
+    return (TokenKind){.type = t_token,
+                       .loc = {.row = 0, .col = 0},
+                       .lexeme = token,
+                       .lexeme_len = strlen(token)};
   };
 
-  return 0;
+  return (TokenKind){0};
 }

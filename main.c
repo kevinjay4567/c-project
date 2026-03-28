@@ -6,9 +6,10 @@ int main() {
     return 1;
   }
 
-  char *nc = next_token();
-  while (nc) {
-    printf("Token: %s\n", nc);
+  TokenKind nc = next_token();
+
+  while (nc.lexeme) {
+      printf("Token: %s | Type: %s\n", nc.lexeme, token_type_to_str(nc.type));
     nc = next_token();
   }
 
