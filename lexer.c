@@ -5,6 +5,10 @@
 
 #define BUFFER_LEN 4096
 
+char buffer[2][BUFFER_LEN] = {0};
+int current = 0;
+char *lexeme_begin, *forward;
+
 // TODO: Aun no se utiliza
 typedef enum {
   LT = '<',
@@ -131,54 +135,104 @@ void tokenizer(char *s) {
   free(id);
 }
 
+char next_char(FILE *in) {
+  switch (*forward) {
+  case '\0': {
+    if (forward == &buffer[0][BUFFER_LEN - 1]) {
+      size_t nb = fread(buffer[1], 1, BUFFER_LEN, in);
+      buffer[1][nb] = '\0';
+      forward = buffer[1];
+    } else if (forward == &buffer[1][BUFFER_LEN - 1]) {
+      size_t nb = fread(buffer[0], 1, BUFFER_LEN, in);
+      buffer[0][nb] = '\0';
+      forward = buffer[0];
+    } else {
+      return 0;
+    }
+  } break;
+  case '/': {
+    if (*(forward + 1) == '/') {
+      while (*forward != '\n') {
+        forward++;
+      }
+      forward++;
+    } else {
+      return 0;
+    }
+    break;
+  }
+  }
+
+  return *forward;
+}
+
 int main() {
   FILE *in = fopen("input.txt", "r");
   if (!in)
     return 1;
 
-  char buffer[BUFFER_LEN];
-  char s_buffer[BUFFER_LEN];
-  char *forward;
+  size_t n = fread(buffer[0], 1, BUFFER_LEN, in);
 
-  while (fgets(buffer, sizeof(buffer), in)) {
-    forward = buffer;
-    char token[128];
-    while (forward != &buffer[strlen(buffer)]) {
-      if (!isspace(*forward)) {
-        if (*forward == ';') {
-          if (strlen(token) > 0) {
-            tokenizer(token);
-          }
+  if (n < BUFFER_LEN) {
+    buffer[0][n] = '\0';
+  }
 
-          token[0] = *forward;
-          token[1] = '\0';
-          tokenizer(token);
-          token[0] = '\0';
-        } else {
-          size_t len = strlen(token);
-          token[len] = *forward;
-          token[len + 1] = '\0';
-        }
-      } else {
-        if (strlen(token) > 0) {
-          tokenizer(token);
-        }
+  forward = buffer[0];
+  lexeme_begin = forward;
+  char token[64] = {0};
 
-        token[0] = '\0';
-      }
-
-      switch (*forward++) {
-      case '\0':
-        if (forward == &buffer[BUFFER_LEN - 1]) {
-          printf("Final del primer buffer");
-        } else if (forward == &s_buffer[BUFFER_LEN - 1]) {
-          printf("Final del segundo buffer");
-        } else {
-          printf("Final de la linea");
-          break;
-        }
-      }
+  while (next_char(in)) {
+    if (isspace(*forward)) {
+      forward++;
+      continue;
     }
+    if (isalpha(*forward) || *forward == '_') {
+      int idx = 0;
+      token[idx] = *forward++;
+      char nc = next_char(in);
+      while (isalnum(nc) || nc == '_') {
+        token[++idx] = *forward++;
+        nc = next_char(in);
+      }
+      token[idx + 1] = '\0';
+      forward--;
+    } else if (*forward == '=') {
+      int idx = 0;
+      token[idx] = *forward++;
+      char nc = next_char(in);
+      if (nc == '=') {
+        token[++idx] = *forward++;
+        nc = next_char(in);
+      }
+
+      token[idx + 1] = '\0';
+      forward--;
+    } else if (isdigit(*forward)) {
+      int idx = 0;
+      while (isdigit(*forward)) {
+        token[idx++] = *forward++;
+      }
+
+      token[idx] = '\0'; 
+      forward--;
+    } else if (*forward == '-') {
+      int idx = 0;
+      token[idx++] = *forward++;
+      char nc = next_char(in);
+      if (nc == '-' || nc == '=') {
+        token[idx++] = nc;
+      }
+
+      token[idx] = '\0';
+    } else if (*forward == ';') {
+      token[0] = *forward;
+      token[1] = '\0';
+    }
+
+    printf("Token: %s\n", token);
+    token[0] = '\0';
+    int count = 0;
+    forward++;
   }
 
   fclose(in);

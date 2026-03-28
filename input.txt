@@ -1,2 +1,3 @@
-int x = 50;
-int y = x - 10;
+// Comentario
+int numero = 50;
+int y = numero - 10;
