@@ -1,8 +1,14 @@
 #include "lexer.h"
 #include <stdio.h>
 
-int main() {
-  if (!read_file("input.txt")) {
+int main(int argv, char* args[]) {
+
+  if (argv == 1) {
+    printf("File is required\n");
+    return 1;
+  }
+
+  if (!read_file(args[1])) {
     return 1;
   }
 
