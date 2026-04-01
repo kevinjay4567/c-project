@@ -25,6 +25,8 @@ const char *token_type_to_str(TokenType t) {
     return "GT";
   case ID:
     return "ID";
+  case SQ:
+    return "SQ";
   case KEYWORD:
     return "KEYWORD";
   case DIGIT:
@@ -65,6 +67,10 @@ char peek_next_char() {
   }
 
   return *(forward + 1);
+}
+
+char peek_before_char() {
+	return *(forward - 1);
 }
 
 char next_char() {
@@ -117,6 +123,18 @@ TokenKind next_token() {
       continue;
     }
 
+    if (peek_before_char() == '\'') {
+	    token[0] = next_char();
+	    token[1] = '\0';
+	    t_token = -1;
+
+	    size_t len = strlen(token);
+	    return (TokenKind){.type = t_token,
+		    .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
+		    .lexeme = token,
+		    .lexeme_len = strlen(token)};
+    }
+
     if (isalpha(*forward) || *forward == '_') {
       int idx = 0;
       token[idx] = next_char();
@@ -163,6 +181,10 @@ TokenKind next_token() {
       token[0] = next_char();
       token[1] = '\0';
       t_token = SEMI;
+    } else if (*forward == '\'') {
+      token[0] = next_char();
+      token[1] = '\0';
+      t_token = SQ;
     }
 
     //FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la derecha

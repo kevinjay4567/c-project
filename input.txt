@@ -1,2 +1,2 @@
-int numero = 50;
-int y = numero - 10;
+int x = 10;
+char _letter = 'a';

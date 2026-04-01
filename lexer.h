@@ -13,6 +13,8 @@ typedef enum {
   GT,
   GE,
   IF,
+  DQ,
+  SQ,
   ELSE,
   ID,
   NUMBER,
