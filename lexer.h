@@ -40,5 +40,6 @@ typedef struct {
 int read_file(const char *path);
 void close_file();
 TokenKind next_token();
+TokenKind peek_next_token();
 const char *token_type_to_str(TokenType t);
 #endif

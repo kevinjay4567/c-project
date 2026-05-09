@@ -61,6 +61,10 @@ int read_file(const char *path) {
 
 void close_file() { fclose(input); }
 
+int is_blank_char() {
+  return isspace(*forward) || *forward == '\t' || *forward == '\n';
+}
+
 char peek_next_char() {
   if (*forward == '\0') {
     return '\0';
@@ -69,9 +73,7 @@ char peek_next_char() {
   return *(forward + 1);
 }
 
-char peek_before_char() {
-	return *(forward - 1);
-}
+char peek_before_char() { return *(forward - 1); }
 
 char next_char() {
   switch (*forward) {
@@ -106,33 +108,117 @@ char next_char() {
   return *forward++;
 }
 
+void skip_blank_chars() {
+  while (isspace(*forward) || *forward == '\t' || *forward == '\n') {
+    if (*forward++ == '\n') {
+      cur_row++;
+      cur_col = 0;
+    }
+  }
+}
+
+void skip_inline_comment() {
+    while (*forward++ != '\n');
+    cur_row++;
+}
+
+TokenKind peek_next_token() {
+  TokenType t_token = {-1};
+  char *c_forward;
+
+  while (1) {
+      // Remove blank chars
+      if (is_blank_char()) {
+        skip_blank_chars();
+      }
+
+      // Remove inline comments
+      if (*forward == '/') {
+          if (peek_next_char() == '/') {
+              skip_inline_comment();
+          }
+      }
+
+      c_forward = forward;
+
+      if (isalpha(*c_forward) || *c_forward == '_') {
+        int idx = 0;
+        token[idx] = *c_forward++;
+        while (isalnum(*c_forward) || *c_forward == '_') {
+          token[++idx] = *c_forward++;
+        }
+
+        token[idx + 1] = '\0';
+        if (strcmp(token, "int") == 0) {
+          t_token = KEYWORD;
+        } else {
+          t_token = ID;
+        }
+      } else if (*c_forward == ';') {
+        token[0] = *c_forward++;
+        token[1] = '\0';
+        t_token = SEMI;
+      } else if (*c_forward == '=') {
+        int idx = 0;
+        token[idx] = *c_forward++;
+        if (*c_forward == '=') {
+          token[++idx] = *c_forward++;
+          t_token = AS;
+        } else {
+          t_token = EQ;
+        }
+
+        token[idx + 1] = '\0';
+      } else if (isdigit(*c_forward)) {
+        int idx = 0;
+        while (isdigit(*c_forward)) {
+          token[idx++] = *c_forward++;
+        }
+
+        t_token = DIGIT;
+        token[idx] = '\0';
+      } else if (*c_forward == '-') {
+        int idx = 0;
+        token[idx++] = *c_forward++;
+        if (*c_forward == '-' || *c_forward == '=') {
+          token[idx++] = *c_forward++;
+        } else {
+          t_token = OP;
+        }
+
+        token[idx] = '\0';
+      } else if (*c_forward == '\'') {
+        token[0] = *c_forward++;
+        token[1] = '\0';
+        t_token = SQ;
+      }
+
+      if (*c_forward == '\0') exit(0);
+
+      // FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la
+      // derecha
+      size_t len = strlen(token);
+      return (TokenKind){
+          .type = t_token,
+          .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
+          .lexeme = token,
+          .lexeme_len = strlen(token)};
+  }
+}
+
 TokenKind next_token() {
   TokenType t_token = {-1};
-  while (*forward != '\0') {
-    if (isspace(*forward) || *forward == '\t' || *forward == '\n') {
-      if (*forward == '\n') {
-        cur_row++;
-        cur_col = 0;
-      }
-      next_char();
-      continue;
+  while (1) {
+    // Remove blank chars
+    if (is_blank_char()) {
+      skip_blank_chars();
     }
 
+    // Remove inline comments
     if (*forward == '/') {
-      next_char();
-      continue;
-    }
-
-    if (peek_before_char() == '\'') {
-	    token[0] = next_char();
-	    token[1] = '\0';
-	    t_token = -1;
-
-	    size_t len = strlen(token);
-	    return (TokenKind){.type = t_token,
-		    .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
-		    .lexeme = token,
-		    .lexeme_len = strlen(token)};
+        if (peek_next_char() == '/') {
+            skip_inline_comment();
+        }
     }
 
     if (isalpha(*forward) || *forward == '_') {
@@ -148,6 +234,10 @@ TokenKind next_token() {
       } else {
         t_token = ID;
       }
+    } else if (*forward == ';') {
+      token[0] = *forward++;
+      token[1] = '\0';
+      t_token = SEMI;
     } else if (*forward == '=') {
       int idx = 0;
       token[idx] = next_char();
@@ -177,22 +267,35 @@ TokenKind next_token() {
       }
 
       token[idx] = '\0';
-    } else if (*forward == ';') {
-      token[0] = next_char();
-      token[1] = '\0';
-      t_token = SEMI;
     } else if (*forward == '\'') {
       token[0] = next_char();
       token[1] = '\0';
       t_token = SQ;
     }
 
-    //FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la derecha
+    /*if (peek_before_char() == '\'') {
+      token[0] = next_char();
+      token[1] = '\0';
+      t_token = -1;
+
+      size_t len = strlen(token);
+      return (TokenKind){
+          .type = t_token,
+          .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
+          .lexeme = token,
+          .lexeme_len = strlen(token)};
+    }*/
+
+    if (*forward == '\0') exit(0);
+
+    // FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la
+    // derecha
     size_t len = strlen(token);
-    return (TokenKind){.type = t_token,
-                       .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
-                       .lexeme = token,
-                       .lexeme_len = strlen(token)};
+    return (TokenKind){
+        .type = t_token,
+        .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
+        .lexeme = token,
+        .lexeme_len = strlen(token)};
   };
 
   return (TokenKind){0};
