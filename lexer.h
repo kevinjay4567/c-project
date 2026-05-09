@@ -34,7 +34,7 @@ typedef struct {
   TokenType type;
   TokenLoc loc;
   size_t lexeme_len;
-  const char *lexeme;
+char lexeme[256];
 } TokenKind;
 
 int read_file(const char *path);

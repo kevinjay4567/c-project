@@ -124,7 +124,6 @@ void skip_inline_comment() {
 
 TokenKind peek_next_token() {
   TokenType t_token = {-1};
-  char *c_forward;
 
   while (1) {
       // Remove blank chars
@@ -139,7 +138,7 @@ TokenKind peek_next_token() {
           }
       }
 
-      c_forward = forward;
+      char *c_forward = forward;
 
       if (isalpha(*c_forward) || *c_forward == '_') {
         int idx = 0;
@@ -198,16 +197,19 @@ TokenKind peek_next_token() {
       // FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la
       // derecha
       size_t len = strlen(token);
-      return (TokenKind){
+      TokenKind result = {
           .type = t_token,
           .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
-          .lexeme = token,
-          .lexeme_len = strlen(token)};
+          .lexeme_len = strlen(token),
+      };
+
+      strcpy(result.lexeme, token);
+      return result;
   }
 }
 
 TokenKind next_token() {
-  TokenType t_token = {-1};
+  TokenType t_token = -1;
   while (1) {
     // Remove blank chars
     if (is_blank_char()) {
@@ -291,11 +293,14 @@ TokenKind next_token() {
     // FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la
     // derecha
     size_t len = strlen(token);
-    return (TokenKind){
+    TokenKind result = {
         .type = t_token,
         .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
-        .lexeme = token,
-        .lexeme_len = strlen(token)};
+        .lexeme_len = len,
+    };
+
+    strcpy(result.lexeme, token);
+    return result;
   };
 
   return (TokenKind){0};

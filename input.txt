@@ -1,3 +1,2 @@
 // Comentario en linea
-int y = 5;
-int x = 8 - y;
+int _ = 5;
