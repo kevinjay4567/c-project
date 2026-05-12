@@ -208,6 +208,21 @@ TokenKind peek_next_token() {
   }
 }
 
+TokenKind create_digit_token() {
+    char number[64] = {0};
+    int count = 0;
+    while (isdigit(*forward)) {
+        number[count++] = *forward++;
+    }
+
+    return (TokenKind) {
+        .type = DIGIT,
+        .lexeme = *number,
+        .lexeme_len = count + 1,
+        .loc = {0}
+    };
+}
+
 TokenKind next_token() {
   TokenType t_token = -1;
   while (1) {
@@ -252,13 +267,7 @@ TokenKind next_token() {
 
       token[idx + 1] = '\0';
     } else if (isdigit(*forward)) {
-      int idx = 0;
-      while (isdigit(*forward)) {
-        token[idx++] = next_char();
-      }
-
-      t_token = DIGIT;
-      token[idx] = '\0';
+        create_digit_token();
     } else if (*forward == '-') {
       int idx = 0;
       token[idx++] = next_char();
