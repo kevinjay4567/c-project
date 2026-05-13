@@ -22,6 +22,7 @@ typedef enum {
   DIGIT,
   OP,
   SEMI,
+  _EOF
 } TokenType;
 
 typedef struct {

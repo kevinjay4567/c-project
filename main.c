@@ -20,17 +20,7 @@ int main(int argv, char* args[]) {
   }
 
   TokenKind ct = next_token();
-  /*int count = 0;
-  while (count < 5) {
-      printf("%s\n", ct.lexeme);
-      ct = next_token();
-      count++;
-      }*/
-
-  ct = next_token();
-  ct = next_token();
-  ct = next_token();
-
+  while (ct.type != _EOF) {
   if (ct.type == KEYWORD && strcmp(ct.lexeme, "int") == 0) {
       if (peek_next_token().type == ID) {
           printf("GOOD\n");
@@ -60,7 +50,15 @@ int main(int argv, char* args[]) {
       int number_r = atoi(add->r_child->value);
 
       printf("%d %s %d = %d\n", number_l, add->value, number_r, number_l + number_r);
+
+      free(n1);
+      free(n2);
+      free(add);
   }
+
+  ct = next_token();
+  }
+
 
   close_file();
   return 0;

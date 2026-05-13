@@ -35,6 +35,8 @@ const char *token_type_to_str(TokenType t) {
     return "OP";
   case SEMI:
     return "SEMI";
+  case _EOF:
+    return "EOF";
   default:
     return "UNKNOWN";
   }
@@ -118,116 +120,118 @@ void skip_blank_chars() {
 }
 
 void skip_inline_comment() {
-    while (*forward++ != '\n');
-    cur_row++;
+  while (*forward++ != '\n')
+    ;
+  cur_row++;
 }
 
 TokenKind peek_next_token() {
   TokenType t_token = {-1};
 
   while (1) {
-      // Remove blank chars
-      if (is_blank_char()) {
-        skip_blank_chars();
+    // Remove blank chars
+    if (is_blank_char()) {
+      skip_blank_chars();
+    }
+
+    // Remove inline comments
+    if (*forward == '/') {
+      if (peek_next_char() == '/') {
+        skip_inline_comment();
+      }
+    }
+
+    char *c_forward = forward;
+
+    if (isalpha(*c_forward) || *c_forward == '_') {
+      int idx = 0;
+      token[idx] = *c_forward++;
+      while (isalnum(*c_forward) || *c_forward == '_') {
+        token[++idx] = *c_forward++;
       }
 
-      // Remove inline comments
-      if (*forward == '/') {
-          if (peek_next_char() == '/') {
-              skip_inline_comment();
-          }
+      token[idx + 1] = '\0';
+      if (strcmp(token, "int") == 0) {
+        t_token = KEYWORD;
+      } else {
+        t_token = ID;
+      }
+    } else if (*c_forward == ';') {
+      token[0] = *c_forward++;
+      token[1] = '\0';
+      t_token = SEMI;
+    } else if (*c_forward == '=') {
+      int idx = 0;
+      token[idx] = *c_forward++;
+      if (*c_forward == '=') {
+        token[++idx] = *c_forward++;
+        t_token = AS;
+      } else {
+        t_token = EQ;
       }
 
-      char *c_forward = forward;
-
-      if (isalpha(*c_forward) || *c_forward == '_') {
-        int idx = 0;
-        token[idx] = *c_forward++;
-        while (isalnum(*c_forward) || *c_forward == '_') {
-          token[++idx] = *c_forward++;
-        }
-
-        token[idx + 1] = '\0';
-        if (strcmp(token, "int") == 0) {
-          t_token = KEYWORD;
-        } else {
-          t_token = ID;
-        }
-      } else if (*c_forward == ';') {
-        token[0] = *c_forward++;
-        token[1] = '\0';
-        t_token = SEMI;
-      } else if (*c_forward == '=') {
-        int idx = 0;
-        token[idx] = *c_forward++;
-        if (*c_forward == '=') {
-          token[++idx] = *c_forward++;
-          t_token = AS;
-        } else {
-          t_token = EQ;
-        }
-
-        token[idx + 1] = '\0';
-      } else if (isdigit(*c_forward)) {
-        int idx = 0;
-        while (isdigit(*c_forward)) {
-          token[idx++] = *c_forward++;
-        }
-
-        t_token = DIGIT;
-        token[idx] = '\0';
-      } else if (*c_forward == '-') {
-        int idx = 0;
+      token[idx + 1] = '\0';
+    } else if (isdigit(*c_forward)) {
+      int idx = 0;
+      while (isdigit(*c_forward)) {
         token[idx++] = *c_forward++;
-        if (*c_forward == '-' || *c_forward == '=') {
-          token[idx++] = *c_forward++;
-        } else {
-          t_token = OP;
-        }
-
-        token[idx] = '\0';
-      } else if (*c_forward == '\'') {
-        token[0] = *c_forward++;
-        token[1] = '\0';
-        t_token = SQ;
-      } else if (*c_forward == '+') {
-          token[0] = *c_forward++;
-          token[1] = '\0';
-          t_token = OP;
       }
 
-      if (*c_forward == '\0') exit(0);
+      t_token = DIGIT;
+      token[idx] = '\0';
+    } else if (*c_forward == '-') {
+      int idx = 0;
+      token[idx++] = *c_forward++;
+      if (*c_forward == '-' || *c_forward == '=') {
+        token[idx++] = *c_forward++;
+      } else {
+        t_token = OP;
+      }
 
-      // FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la
-      // derecha
-      size_t len = strlen(token);
-      TokenKind result = {
-          .type = t_token,
-          .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
-          .lexeme_len = strlen(token),
-      };
+      token[idx] = '\0';
+    } else if (*c_forward == '\'') {
+      token[0] = *c_forward++;
+      token[1] = '\0';
+      t_token = SQ;
+    } else if (*c_forward == '+') {
+      token[0] = *c_forward++;
+      token[1] = '\0';
+      t_token = OP;
+    }
 
-      strcpy(result.lexeme, token);
-      return result;
+    if (*c_forward == '\0')
+      exit(0);
+
+    // FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la
+    // derecha
+    size_t len = strlen(token);
+    TokenKind result = {
+        .type = t_token,
+        .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
+        .lexeme_len = strlen(token),
+    };
+
+    strcpy(result.lexeme, token);
+    return result;
   }
 }
 
 TokenKind create_digit_token() {
-    char number[64] = {0};
-    int count = 0;
-    while (isdigit(*forward)) {
-        number[count++] = *forward++;
-    }
+  char number[64] = {0};
+  int count = 0;
+  while (isdigit(*forward)) {
+    number[count++] = *forward++;
+  }
 
-    size_t len = strlen(number);
-    TokenKind result = {
-        .type = DIGIT,
-        .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
-        .lexeme_len = len,
-    };
+  size_t len = strlen(number);
+  TokenKind result = {
+      .type = DIGIT,
+      .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
+      .lexeme_len = len,
+  };
 
-    strcpy(result.lexeme, number);
-    return result;
+  strcpy(result.lexeme, number);
+  return result;
 }
 
 TokenKind next_token() {
@@ -240,9 +244,9 @@ TokenKind next_token() {
 
     // Remove inline comments
     if (*forward == '/') {
-        if (peek_next_char() == '/') {
-            skip_inline_comment();
-        }
+      if (peek_next_char() == '/') {
+        skip_inline_comment();
+      }
     }
 
     if (isalpha(*forward) || *forward == '_') {
@@ -267,13 +271,13 @@ TokenKind next_token() {
       token[idx++] = *forward++;
       token[idx] = '\0';
     } else if (isdigit(*forward)) {
-        int idx = 0;
-        while (isdigit(*forward)) {
-            token[idx++] = *forward++;
-        }
+      int idx = 0;
+      while (isdigit(*forward)) {
+        token[idx++] = *forward++;
+      }
 
-        token[idx] = '\0';
-        t_token = DIGIT;
+      token[idx] = '\0';
+      t_token = DIGIT;
     } else if (*forward == '-') {
       int idx = 0;
       token[idx++] = next_char();
@@ -289,12 +293,12 @@ TokenKind next_token() {
       token[1] = '\0';
       t_token = SQ;
     } else if (*forward == '+') {
-        token[0] = *forward++;
-        token[1] = '\0';
-        t_token = OP;
+      token[0] = *forward++;
+      token[1] = '\0';
+      t_token = OP;
+    } else if (*forward == '\0') {
+        t_token = _EOF;
     }
-
-    if (*forward == '\0') exit(0);
 
     // FIXME: Solucionar el cursor de columna final esta movido 1 posicion a la
     // derecha
