@@ -21,7 +21,7 @@ typedef enum {
   KEYWORD,
   DIGIT,
   OP,
-  SEMI
+  SEMI,
 } TokenType;
 
 typedef struct {
@@ -34,7 +34,7 @@ typedef struct {
   TokenType type;
   TokenLoc loc;
   size_t lexeme_len;
-char lexeme[256];
+  char lexeme[32];
 } TokenKind;
 
 int read_file(const char *path);

@@ -190,6 +190,10 @@ TokenKind peek_next_token() {
         token[0] = *c_forward++;
         token[1] = '\0';
         t_token = SQ;
+      } else if (*c_forward == '+') {
+          token[0] = *c_forward++;
+          token[1] = '\0';
+          t_token = OP;
       }
 
       if (*c_forward == '\0') exit(0);
@@ -215,12 +219,15 @@ TokenKind create_digit_token() {
         number[count++] = *forward++;
     }
 
-    return (TokenKind) {
+    size_t len = strlen(number);
+    TokenKind result = {
         .type = DIGIT,
-        .lexeme = *number,
-        .lexeme_len = count + 1,
-        .loc = {0}
+        .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
+        .lexeme_len = len,
     };
+
+    strcpy(result.lexeme, number);
+    return result;
 }
 
 TokenKind next_token() {
@@ -257,17 +264,16 @@ TokenKind next_token() {
       t_token = SEMI;
     } else if (*forward == '=') {
       int idx = 0;
-      token[idx] = next_char();
-      if (*forward == '=') {
-        token[++idx] = next_char();
-        t_token = AS;
-      } else {
-        t_token = EQ;
-      }
-
-      token[idx + 1] = '\0';
+      token[idx++] = *forward++;
+      token[idx] = '\0';
     } else if (isdigit(*forward)) {
-        create_digit_token();
+        int idx = 0;
+        while (isdigit(*forward)) {
+            token[idx++] = *forward++;
+        }
+
+        token[idx] = '\0';
+        t_token = DIGIT;
     } else if (*forward == '-') {
       int idx = 0;
       token[idx++] = next_char();
@@ -282,20 +288,11 @@ TokenKind next_token() {
       token[0] = next_char();
       token[1] = '\0';
       t_token = SQ;
+    } else if (*forward == '+') {
+        token[0] = *forward++;
+        token[1] = '\0';
+        t_token = OP;
     }
-
-    /*if (peek_before_char() == '\'') {
-      token[0] = next_char();
-      token[1] = '\0';
-      t_token = -1;
-
-      size_t len = strlen(token);
-      return (TokenKind){
-          .type = t_token,
-          .loc = {.row = cur_row, .fwd = cur_col, .bgn = (cur_col - len)},
-          .lexeme = token,
-          .lexeme_len = strlen(token)};
-    }*/
 
     if (*forward == '\0') exit(0);
 
